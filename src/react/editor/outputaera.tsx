@@ -35,6 +35,16 @@ export function OutputAera({ context }: OutputAreaProps) {
     const classes = useStyles();
     const [mode, setMode] = React.useState(BR_RECOVER);
 
+    //
+    // 해당 모드로 변환된 문자열을 가져온다.
+    // 에러가 발생한 경우 에러 메세지로 설정된다.
+    let processed: string;
+    try {
+        processed = mode.process(context);
+    } catch (e) {
+        processed = e;
+    }
+
     return (
         <Box className={classes.root}>
             {/* 모드 선택바 */}
@@ -60,7 +70,7 @@ export function OutputAera({ context }: OutputAreaProps) {
             </AppBar>
 
             {/* 선택한 모드의 결과가 출력되는 텍스트 영역 */}
-            <textarea className={classes.body} value={mode.process(context)} />
+            <textarea className={classes.body} value={processed} />
         </Box>
     );
 }
