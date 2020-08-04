@@ -192,7 +192,10 @@ function parseLine(line: string): Tag {
         /^!\[\.*?\]\(.*?\)$/.test(line) ||
         //
         // 링크 있는 이미지
-        /^\[!\[.*?\]\(.*?\)\]\(.*?\)$/.test(line)
+        /^\[!\[.*?\]\(.*?\)\]\(.*?\)$/.test(line) ||
+        //
+        // 티스토리 치환자 이미지
+        /^\[\#\#_.+?_\#\#]$/.test(line)
     ) {
         return Tag.IMAGE;
     }
