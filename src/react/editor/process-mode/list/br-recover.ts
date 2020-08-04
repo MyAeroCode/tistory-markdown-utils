@@ -140,11 +140,14 @@ export const BR_RECOVER = new ProcessMode({
                 if (thisCodeBlock === undefined) {
                     throw new Error(`코드블럭의 개수가 부족합니다.`);
                 }
-                tokens[i].line = thisCodeBlock;
+                tokens[i].line = thisCodeBlock + "\n\n";
             }
         }
 
-        return tokens.map((token) => token.line).join("");
+        return tokens
+            .map((token) => token.line)
+            .join("")
+            .trim();
     },
 });
 

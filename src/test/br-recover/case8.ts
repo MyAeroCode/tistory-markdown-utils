@@ -20,9 +20,37 @@ on :
     push :
         - branches : [master]
 \`\`\`
+
+### Hello, World!
+
+\`\`\`yaml
+# 
+# Github Action
+name : Hello, World!
+
+on :
+    pull_request :
+        - branches : [master]
+    push :
+        - branches : [master]
+\`\`\`
 `.trim();
 
 const expect = `
+\`\`\`yaml
+# 
+# Github Action
+name : Hello, World!
+
+on :
+    pull_request :
+        - branches : [master]
+    push :
+        - branches : [master]
+\`\`\`
+
+### Hello, World!
+
 \`\`\`yaml
 # 
 # Github Action
