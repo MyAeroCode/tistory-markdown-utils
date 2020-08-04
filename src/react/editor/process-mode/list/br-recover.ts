@@ -5,7 +5,7 @@ import { ProcessMode } from "../process-mode";
  */
 export const BR_RECOVER = new ProcessMode({
     name: "BR_RECOVER",
-    process: (context) => {
+    process: ({ inputText }) => {
         const lineBreak = `\n\n<br/>`;
 
         /**
@@ -29,15 +29,38 @@ export const BR_RECOVER = new ProcessMode({
          *    4-1. 같은 레벨 내, 각 텍스트 문단 사이는 띄어쓴다.
          *    4-2. 같은 레벨 내, 리스트의 위는 텍스트가 있더라도 붙여쓰고 아래는 띄어쓴다.
          *    4-3. 같은 레벨 내, 이미지와 코드는 위아래에 제목을 제외한 무엇과도 붙여쓴다.
+         *    4-4. 코드블럭 내용은 이스케이프한다.
          */
 
         //
-        // [전처리]
+        // [전처리 - 1]
+        // 코드블럭을 추출한다.
+        const codeBlocksVal = inputText.match(/^```(.|\n)*?```$/gm);
+        const codeBlocksCnt = codeBlocksVal !== null ? codeBlocksVal.length : 0;
+        let codeBlockStack: string[] = [];
+        if (codeBlocksCnt) {
+            if (codeBlocksVal) {
+                for (let i = 0; i < codeBlocksCnt; i++) {
+                    inputText = inputText.replace(
+                        codeBlocksVal[i],
+                        `%%%CODE_BLOCK%%%`
+                    );
+                    codeBlockStack.push(codeBlocksVal[i]);
+                }
+            } else {
+                throw new Error(
+                    `코드블럭의 예상개수와 실제개수가 일치하지 않습니다.`
+                );
+            }
+        }
+
+        //
+        // [전처리 - 2]
         // 1. 의미있는 행만 추출한다.
         // 2  각 라인의 불필요한 뒤쪽 공백을 제거한다.
         // 3. 모든 레벨의 제목에 적용된 인용을 전부 제거한다.
         // 4. 각 라인의 상세정보를 파싱한다.
-        let tokens = context.inputText
+        let tokens = inputText
             .split(/\n+/g)
             .map((line) => {
                 //
@@ -51,52 +74,73 @@ export const BR_RECOVER = new ProcessMode({
                 }
 
                 //
+                // 코드블럭에 포함된 내용은 이스케이프한다.
+                let tag = parseLine(line);
+
+                //
                 // 각 라인의 상세정보를 파싱한다.
-                return {
-                    line: line,
-                    tag: parseLine(line),
-                };
+                return { line, tag };
             })
             .filter((line) => line);
 
         //
         // 규칙을 적용한다.
-        for (let i = 0; i < tokens.length - 1; i++) {
-            //
-            // 1레벨 제목에만 인용문을 붙인다.
-            if (
-                tokens[i].tag === Tag.TITLE &&
-                getTitleLevel(tokens[i].line) === 1
-            ) {
-                tokens[i].line = `> ${tokens[i].line}`;
-            }
+        if (2 <= tokens.length) {
+            for (let i = 0; i < tokens.length - 1; i++) {
+                //
+                // 1레벨 제목에만 인용문을 붙인다.
+                if (
+                    tokens[i].tag === Tag.TITLE &&
+                    getTitleLevel(tokens[i].line) === 1
+                ) {
+                    tokens[i].line = `> ${tokens[i].line}`;
+                }
 
-            //
-            // 상위 레벨에 내용이 있는 경우,
-            // 하위 레벨과 띄어쓴다.
-            if (
-                tokens[i].tag !== Tag.TITLE &&
-                tokens[i + 1].tag === Tag.TITLE
-            ) {
-                tokens[i].line += lineBreak;
-            }
+                //
+                // 상위 레벨에 내용이 있는 경우,
+                // 하위 레벨과 띄어쓴다.
+                if (
+                    tokens[i].tag !== Tag.TITLE &&
+                    tokens[i + 1].tag === Tag.TITLE
+                ) {
+                    tokens[i].line += lineBreak;
+                }
 
-            //
-            // (텍스트 또는 리스트)와 다음 텍스트 사이는 띄어쓴다.
-            if (
-                (tokens[i].tag === Tag.TEXT || tokens[i].tag === Tag.LIST) &&
-                tokens[i + 1].tag === Tag.TEXT
-            ) {
-                tokens[i].line += lineBreak;
-            }
+                //
+                // (텍스트 또는 리스트)와 다음 텍스트 사이는 띄어쓴다.
+                if (
+                    (tokens[i].tag === Tag.TEXT ||
+                        tokens[i].tag === Tag.LIST) &&
+                    tokens[i + 1].tag === Tag.TEXT
+                ) {
+                    tokens[i].line += lineBreak;
+                }
 
+                //
+                // 끝에 개행을 붙인다.
+                // 단, 리스트와 다음 리스트 사이에는 개행이 붙으면 안된다.
+                if (
+                    tokens[i].tag === Tag.LIST &&
+                    tokens[i + 1].tag === Tag.LIST
+                ) {
+                    tokens[i].line += `\n`;
+                } else {
+                    tokens[i].line += `\n\n`;
+                }
+            }
+        }
+
+        //
+        // 코드 블럭을 복구한다.
+        for (let i = 0; i < tokens.length; i++) {
             //
-            // 끝에 개행을 붙인다.
-            // 단, 리스트와 다음 리스트 사이에는 개행이 붙으면 안된다.
-            if (tokens[i].tag === Tag.LIST && tokens[i + 1].tag === Tag.LIST) {
-                tokens[i].line += `\n`;
-            } else {
-                tokens[i].line += `\n\n`;
+            // 코드블럭인 경우 복구한다.
+            if (tokens[i].tag === Tag.CODE) {
+                const thisCodeBlock = codeBlockStack.shift();
+                if (thisCodeBlock === undefined) {
+                    throw new Error(`코드블럭의 개수가 부족합니다.`);
+                }
+                tokens[i].line = thisCodeBlock;
             }
         }
 
@@ -122,12 +166,12 @@ function parseLine(line: string): Tag {
         return Tag.TITLE;
     }
     if (/^#+/.test(line)) {
-        throw new Error(`타이틀 태그의 내용이 비어있습니다.`);
+        throw new Error(`타이틀 태그의 내용이 비어있습니다. where : \n${line}`);
     }
 
     //
-    // 코드의 시작 또는 끝인지 검사한다.
-    if (/^```[a-zA-Z0-9]*$/.test(line)) {
+    // 코드블럭인지 검사한다.
+    if (line === `%%%CODE_BLOCK%%%`) {
         return Tag.CODE;
     }
 
