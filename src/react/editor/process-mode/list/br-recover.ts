@@ -177,7 +177,7 @@ function parseLine(line: string): Tag {
 
     //
     // 리스트인지 검사한다.
-    if (/^ *[+*-] .*?$/.test(line)) {
+    if (/^ *[+*-] .*?$/.test(line) || /^[1-9][0-9]*\. .*?$/.test(line)) {
         return Tag.LIST;
     }
 

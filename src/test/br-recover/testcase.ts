@@ -7,6 +7,7 @@ import { test5 } from "./case5";
 import { test6 } from "./case6";
 import { test7 } from "./case7";
 import { test8 } from "./case8";
+import { test9 } from "./case9";
 
 export interface BrRecoverTestCase {
     testTitle: string;
@@ -26,4 +27,5 @@ export const brRecoverTestCases: BrRecoverTestCase[] = [
     test6,
     test7,
     test8,
+    test9,
 ];
