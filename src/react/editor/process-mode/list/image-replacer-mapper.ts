@@ -43,8 +43,8 @@ export const IMAGE_REPLACER_MAPPER = new ProcessMode({
             .split("\n")
             .map((line, lineIdx) => {
                 //
-                // 앞 뒤의 불필요한 공백을 제거한다.
-                line = line.trim();
+                // 앞 뒤의 불필요한 뒷 공백을 제거한다.
+                line = line.trimRight();
 
                 //
                 // 해당 라인이 이미지 치환자인지 검사한다.
