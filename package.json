@@ -32,7 +32,12 @@
         "test": "mocha ./src/**/*.spec.ts -r ts-node/register",
         "dev-hot-react": "webpack-dev-server",
         "dev-hot-electron": "tsc-watch --onsuccess \"electron ./dist/electron\"",
-        "start": "npm-run-all --parallel dev-hot-react dev-hot-electron"
+        "dev": "npm-run-all --parallel dev-hot-react dev-hot-electron",
+        "build-react": "webpack",
+        "build-electron": "tsc",
+        "build": "npm-run-all --parallel build-react build-electron",
+        "start": "electron ./dist/electron",
+        "clean": "rm -rf ./dist"
     },
     "repository": {
         "type": "git",
