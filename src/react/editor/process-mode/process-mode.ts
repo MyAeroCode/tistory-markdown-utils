@@ -28,8 +28,20 @@ export class ProcessMode {
      */
     readonly process: ProcessImpl;
 
+    /**
+     * 문맥의 각 필드에 존재하는 불필요한 앞뒤 공백을 제거.
+     */
+    private trimCtx(ctx: EditorContext): EditorContext {
+        const cleaned = Object.assign({}, ctx);
+        cleaned.docsTitle = cleaned.docsTitle.trim();
+        cleaned.inputText = cleaned.inputText.trim();
+        return cleaned;
+    }
+
     constructor(args: ProcessModeConstructorArgs) {
         this.name = args.name;
-        this.process = args.process;
+        this.process = (ctx: EditorContext) => {
+            return args.process(this.trimCtx(ctx));
+        };
     }
 }
